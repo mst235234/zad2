@@ -1,0 +1,54 @@
+version: '3.8'
+services:
+
+    nginx:
+        image: nginx
+        container_name: zad2-nginx
+        depends_on: # nginx potrzebuje phpfm by wyswietlic strone glowna index.php
+            - phpfpm
+        ports: # mapujemy port 80 w kontenerze do 6666 na hoscie
+            - "6666:80"
+        volumes:
+            - ./public:/usr/share/nginx/html # folder ze strona glowna
+            - ./nginx/default.conf:/etc/nginx/conf.d/default.conf # konfiguracja nginx
+        networks: # podlaczenie do frontendu
+            - front
+            - back
+            
+    phpfpm:
+        image: php:fpm
+        container_name: zad2-phpfpm
+        ports: # mapowanie portu 9000 w kontenerze do 9000 na hoscie
+            - "9000:9000"
+        volumes:
+            - ./public:/usr/share/nginx/html # dostep do index.php z nginx
+        networks: # podlaczenie do backendu
+            - back
+            
+    mariadb:
+        image: mariadb:10.5.2
+        container_name: zad2-mariadb
+        volumes:
+            - ./mariadb-volume:/var/lib/mysql # konfiguracja i inne niezbedne pliki mariadb
+        environment: # niezbedna konfiguracja bazy - haslo do roota i uzytkownika, a takze konfiguracja domyslnej bazy testdb
+            MYSQL_ROOT_PASSWORD: "rootpwd"
+            MYSQL_USER: 'testuser'
+            MYSQL_PASSWORD: 'testpassword'
+            MYSQL_DATABASE: 'testdb'
+        networks: # podlaczenie do backendu
+            - back
+
+    phpmyadmin:
+        image: phpmyadmin/phpmyadmin
+        container_name: zad2-phpmyadmin
+        depends_on: # phpmyadmin musi polaczyc sie z baza
+            - mariadb
+        links: # podlaczenie phpymadmin do mariadb
+            - 'mariadb:db'
+        ports: # mapowanie portu 80 w kontenerze do 6001 na hoscie
+            - 6001:80
+        networks: # podlaczenie do backendu
+            - back
+networks: # definicja sieci
+    front:
+    back:
